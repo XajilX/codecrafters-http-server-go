@@ -29,12 +29,14 @@ func main() {
 		os.Exit(1)
 	}
 	meth, path, prot := reql[0], reql[1], reql[2]
-	if meth != "GET" || !strings.HasPrefix(path, "/echo/") {
+	if meth != "GET" {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
 		os.Exit(0)
 	}
 	path_seg := strings.Split(path, "/")
-	if len(path_seg) == 3 && path_seg[1] == "echo" {
+	if len(path_seg) == 1 {
+		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
+	} else if len(path_seg) == 3 && path_seg[1] == "echo" {
 		str := path_seg[2]
 		conn.Write([]byte(prot + " 200 OK\r\n"))
 		conn.Write([]byte("Content-Type: text/plain\r\n"))
@@ -42,6 +44,5 @@ func main() {
 		conn.Write([]byte(str))
 	} else {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
-		os.Exit(0)
 	}
 }
