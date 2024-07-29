@@ -53,7 +53,7 @@ func Handler(conn net.Conn) {
 	if meth == "GET" {
 		Handler_get(conn, prot, path, reqs)
 	} else if meth == "POST" {
-
+		Handler_post(conn, prot, path, reqs)
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
@@ -89,8 +89,8 @@ func Handler_post(conn net.Conn, prot, path string, reqs []string) {
 	if len_seg == 3 && path_seg[1] == "files" {
 		len_body := 0
 		for _, s := range reqs {
-			if strings.HasPrefix(s, "User-Agent: ") {
-				str_len_body, _ := strings.CutPrefix(s, "User-Agent: ")
+			if strings.HasPrefix(s, "Content-Length: ") {
+				str_len_body, _ := strings.CutPrefix(s, "Content-Length: ")
 				len_body, _ = strconv.Atoi(str_len_body)
 			}
 		}
