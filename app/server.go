@@ -11,14 +11,14 @@ import (
 	"strings"
 )
 
-func Resp_text_plain(prot, s string, comp_type string) []byte {
+func Resp_text_plain(prot, s, comp_type string) []byte {
 	var bs []byte
 	is_comp := false
 	for _, comp_t := range strings.Split(comp_type, ",") {
 		comp_t = strings.Trim(comp_t, " ")
 		switch comp_t {
 		case "gzip":
-			bs = Compress_gzip(s)
+			bs = Compress_gzip([]byte(s))
 			comp_type = comp_t
 			is_comp = true
 		default:
@@ -40,7 +40,7 @@ func Resp_text_plain(prot, s string, comp_type string) []byte {
 	)), bs)
 }
 
-func Compress_gzip(s string) []byte {
+func Compress_gzip(s []byte) []byte {
 	var wr bytes.Buffer
 	gzip_wr := gzip.NewWriter(&wr)
 	gzip_wr.Write([]byte(s))
@@ -48,7 +48,7 @@ func Compress_gzip(s string) []byte {
 	return wr.Bytes()
 }
 
-func Resp_file(prot, path string) []byte {
+func Resp_file(prot, path, comp_type string) []byte {
 	dir := os.Args[2]
 	file, err := os.Open(dir + path)
 	if err != nil {
@@ -62,12 +62,33 @@ func Resp_file(prot, path string) []byte {
 		fmt.Println("Error reading file")
 		return []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 	}
+	var bs []byte
+	is_comp := false
+	for _, comp_t := range strings.Split(comp_type, ",") {
+		comp_t = strings.Trim(comp_t, " ")
+		switch comp_t {
+		case "gzip":
+			bs = Compress_gzip(data[:count])
+			comp_type = comp_t
+			is_comp = true
+		default:
+			bs = data[:count]
+		}
+		if is_comp {
+			break
+		}
+	}
+	c_enc := ""
+	if is_comp {
+		c_enc = fmt.Sprintf("Content-Encoding: %s\r\n", comp_type)
+	}
 	resp_head := []byte(fmt.Sprintf(
-		"%s 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n",
+		"%s 200 OK\r\n%sContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n",
 		prot,
-		count,
+		c_enc,
+		len(bs),
 	))
-	return slices.Concat(resp_head, data[:count])
+	return slices.Concat(resp_head, bs)
 }
 
 func Handler(conn net.Conn) {
@@ -113,7 +134,13 @@ func Handler_get(conn net.Conn, prot, path string, reqs []string) {
 		}
 		conn.Write(Resp_text_plain(prot, ua, ""))
 	} else if len_seg == 3 && path_seg[1] == "files" {
-		conn.Write(Resp_file(prot, path_seg[2]))
+		comp := ""
+		for _, s := range reqs {
+			if strings.HasPrefix(s, "Accept-Encoding: ") {
+				comp, _ = strings.CutPrefix(s, "Accept-Encoding: ")
+			}
+		}
+		conn.Write(Resp_file(prot, path_seg[2], comp))
 	} else {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
 	}
