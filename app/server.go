@@ -24,10 +24,24 @@ func main() {
 	conn.Read(req)
 	reqs := strings.Split(string(req), "\r\n")
 	reql := strings.Split(reqs[0], " ")
+	if len(reql) != 3 {
+		fmt.Println("Error parsing request: ", err.Error())
+		os.Exit(1)
+	}
 	meth, path, prot := reql[0], reql[1], reql[2]
-	if meth != "GET" || path != "/" {
+	if meth != "GET" || !strings.HasPrefix(path, "/echo/") {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
+		os.Exit(0)
+	}
+	path_seg := strings.Split(path, "/")
+	if len(path_seg) == 3 && path_seg[1] == "echo" {
+		str := path_seg[2]
+		conn.Write([]byte(prot + " 200 OK\r\n"))
+		conn.Write([]byte("Content-Type: text/plain\r\n"))
+		conn.Write([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", len(path_seg[2]))))
+		conn.Write([]byte(str))
 	} else {
-		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
+		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
+		os.Exit(0)
 	}
 }
