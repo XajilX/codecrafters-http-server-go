@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+func Resp_text_plain(prot, s string) string {
+	return fmt.Sprintf(
+		"%s 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",
+		prot,
+		len(s),
+		s,
+	)
+}
+
 func main() {
 
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
@@ -33,15 +42,21 @@ func main() {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
 		os.Exit(0)
 	}
+	ua := ""
+	for _, s := range reqs {
+		if strings.HasPrefix(s, "User-Agent: ") {
+			ua, _ = strings.CutPrefix(s, "User-Agent: ")
+		}
+	}
 	path_seg := strings.Split(path, "/")
-	if len(path_seg) == 2 && path_seg[1] == "" {
+	len_seg := len(path_seg)
+	if len_seg == 2 && path_seg[1] == "" {
 		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
-	} else if len(path_seg) == 3 && path_seg[1] == "echo" {
+	} else if len_seg == 3 && path_seg[1] == "echo" {
 		str := path_seg[2]
-		conn.Write([]byte(prot + " 200 OK\r\n"))
-		conn.Write([]byte("Content-Type: text/plain\r\n"))
-		conn.Write([]byte(fmt.Sprintf("Content-Length: %d\r\n\r\n", len(path_seg[2]))))
-		conn.Write([]byte(str))
+		conn.Write([]byte(Resp_text_plain(prot, str)))
+	} else if len_seg == 2 && path_seg[1] == "user-agent" {
+		conn.Write([]byte(Resp_text_plain(prot, ua)))
 	} else {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
 	}
