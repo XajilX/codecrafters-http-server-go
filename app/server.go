@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -20,4 +21,14 @@ func main() {
 		os.Exit(1)
 	}
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	req := make([]byte, 1024)
+	conn.Read(req)
+	reqs := strings.Split(string(req), "\r\n")
+	reql := strings.Split(reqs[0], " ")
+	meth, path, prot := reql[0], reql[1], reql[2]
+	if meth != "GET" || path != "/" {
+		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
+	} else {
+		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
+	}
 }
