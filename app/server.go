@@ -34,7 +34,7 @@ func main() {
 		os.Exit(0)
 	}
 	path_seg := strings.Split(path, "/")
-	if len(path_seg) == 1 {
+	if len(path_seg) == 2 && path_seg[1] == "" {
 		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
 	} else if len(path_seg) == 3 && path_seg[1] == "echo" {
 		str := path_seg[2]
