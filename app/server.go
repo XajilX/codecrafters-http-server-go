@@ -18,14 +18,17 @@ func Resp_text_plain(prot, s string) []byte {
 }
 
 func Resp_file(prot, path string) []byte {
-	file, err := os.Open(path)
+	dir := os.Args[2]
+	file, err := os.Open(dir + path)
 	if err != nil {
+		fmt.Println("Error opening file")
 		return []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 	}
 	defer file.Close()
 	data := make([]byte, 1024)
 	count, err := file.Read(data)
 	if err != nil {
+		fmt.Println("Error reading file")
 		return []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 	}
 	resp_head := []byte(fmt.Sprintf(
