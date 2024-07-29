@@ -16,25 +16,13 @@ func Resp_text_plain(prot, s string) string {
 	)
 }
 
-func main() {
-
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
-	if err != nil {
-		fmt.Println("Failed to bind to port 4221")
-		os.Exit(1)
-	}
-
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
+func Handler(conn net.Conn) {
 	req := make([]byte, 1024)
 	conn.Read(req)
 	reqs := strings.Split(string(req), "\r\n")
 	reql := strings.Split(reqs[0], " ")
 	if len(reql) != 3 {
-		fmt.Println("Error parsing request: ", err.Error())
+		fmt.Println("Error parsing request")
 		os.Exit(1)
 	}
 	meth, path, prot := reql[0], reql[1], reql[2]
@@ -59,5 +47,22 @@ func main() {
 		conn.Write([]byte(Resp_text_plain(prot, ua)))
 	} else {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
+	}
+}
+
+func main() {
+	l, err := net.Listen("tcp", "0.0.0.0:4221")
+	if err != nil {
+		fmt.Println("Failed to bind to port 4221")
+		os.Exit(1)
+	}
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			continue
+		}
+		go Handler(conn)
 	}
 }
