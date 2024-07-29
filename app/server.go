@@ -20,7 +20,6 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	req := make([]byte, 1024)
 	conn.Read(req)
 	reqs := strings.Split(string(req), "\r\n")
