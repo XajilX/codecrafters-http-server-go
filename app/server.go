@@ -32,7 +32,7 @@ func Resp_file(prot, path string) []byte {
 		return []byte("HTTP/1.1 404 Not Found\r\n\r\n")
 	}
 	resp_head := []byte(fmt.Sprintf(
-		"%s 200 OK\r\nContent-Type: text/octet-stream\r\nContent-Length: %d\r\n\r\n",
+		"%s 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n",
 		prot,
 		count,
 	))
