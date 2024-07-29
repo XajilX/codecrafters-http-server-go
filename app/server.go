@@ -41,7 +41,7 @@ func Resp_text_plain(prot, s string, comp_type string) []byte {
 }
 
 func Compress_gzip(s string) []byte {
-	bs := make([]byte, len(s))
+	bs := make([]byte, 1024)
 	wr := bytes.NewBuffer(bs)
 	gzip_wr := gzip.NewWriter(wr)
 	gzip_wr.Write([]byte(s))
