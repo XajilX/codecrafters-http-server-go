@@ -65,7 +65,7 @@ func Handler(conn net.Conn) {
 		conn.Write(Resp_text_plain(prot, str))
 	} else if len_seg == 2 && path_seg[1] == "user-agent" {
 		conn.Write(Resp_text_plain(prot, ua))
-	} else if len_seg == 3 && path_seg[1] == "file" {
+	} else if len_seg == 3 && path_seg[1] == "files" {
 		conn.Write(Resp_file(prot, path_seg[2]))
 	} else {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
