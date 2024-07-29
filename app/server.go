@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net"
 	"os"
@@ -9,13 +11,35 @@ import (
 	"strings"
 )
 
-func Resp_text_plain(prot, s string) []byte {
-	return []byte(fmt.Sprintf(
-		"%s 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",
+func Resp_text_plain(prot, s string, comp_type string) []byte {
+	var bs []byte
+	is_comp := false
+	switch comp_type {
+	case "gzip":
+		bs = Compress_gzip(s)
+		is_comp = true
+	default:
+		bs = []byte(s)
+	}
+	c_enc := ""
+	if is_comp {
+		c_enc = fmt.Sprintf("Content-Encoding: %s\r\n", comp_type)
+	}
+	return slices.Concat([]byte(fmt.Sprintf(
+		"%s 200 OK\r\n%sContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n",
 		prot,
+		c_enc,
 		len(s),
-		s,
-	))
+	)), bs)
+}
+
+func Compress_gzip(s string) []byte {
+	bs := make([]byte, len(s))
+	wr := bytes.NewBuffer(bs)
+	gzip_wr := gzip.NewWriter(wr)
+	gzip_wr.Write([]byte(s))
+	gzip_wr.Close()
+	return bs
 }
 
 func Resp_file(prot, path string) []byte {
@@ -66,8 +90,14 @@ func Handler_get(conn net.Conn, prot, path string, reqs []string) {
 	if len_seg == 2 && path_seg[1] == "" {
 		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
 	} else if len_seg == 3 && path_seg[1] == "echo" {
+		comp := ""
+		for _, s := range reqs {
+			if strings.HasPrefix(s, "Accept-Encoding: ") {
+				comp, _ = strings.CutPrefix(s, "Accept-Encoding: ")
+			}
+		}
 		str := path_seg[2]
-		conn.Write(Resp_text_plain(prot, str))
+		conn.Write(Resp_text_plain(prot, str, comp))
 	} else if len_seg == 2 && path_seg[1] == "user-agent" {
 		ua := ""
 		for _, s := range reqs {
@@ -75,7 +105,7 @@ func Handler_get(conn net.Conn, prot, path string, reqs []string) {
 				ua, _ = strings.CutPrefix(s, "User-Agent: ")
 			}
 		}
-		conn.Write(Resp_text_plain(prot, ua))
+		conn.Write(Resp_text_plain(prot, ua, ""))
 	} else if len_seg == 3 && path_seg[1] == "files" {
 		conn.Write(Resp_file(prot, path_seg[2]))
 	} else {
