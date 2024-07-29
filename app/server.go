@@ -25,7 +25,6 @@ func main() {
 	reqs := strings.Split(string(req), "\r\n")
 	reql := strings.Split(reqs[0], " ")
 	meth, path, prot := reql[0], reql[1], reql[2]
-	fmt.Println("Processing...")
 	if meth != "GET" || path != "/" {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
 	} else {
