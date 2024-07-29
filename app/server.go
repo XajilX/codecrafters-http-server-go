@@ -14,12 +14,19 @@ import (
 func Resp_text_plain(prot, s string, comp_type string) []byte {
 	var bs []byte
 	is_comp := false
-	switch comp_type {
-	case "gzip":
-		bs = Compress_gzip(s)
-		is_comp = true
-	default:
-		bs = []byte(s)
+	for _, comp_t := range strings.Split(comp_type, ",") {
+		comp_t = strings.Trim(comp_t, " ")
+		switch comp_t {
+		case "gzip":
+			bs = Compress_gzip(s)
+			comp_type = comp_t
+			is_comp = true
+		default:
+			bs = []byte(s)
+		}
+		if is_comp {
+			break
+		}
 	}
 	c_enc := ""
 	if is_comp {
