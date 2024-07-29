@@ -36,17 +36,16 @@ func Resp_text_plain(prot, s string, comp_type string) []byte {
 		"%s 200 OK\r\n%sContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n",
 		prot,
 		c_enc,
-		len(s),
+		len(bs),
 	)), bs)
 }
 
 func Compress_gzip(s string) []byte {
-	bs := make([]byte, 1024)
-	wr := bytes.NewBuffer(bs)
-	gzip_wr := gzip.NewWriter(wr)
+	var wr bytes.Buffer
+	gzip_wr := gzip.NewWriter(&wr)
 	gzip_wr.Write([]byte(s))
 	gzip_wr.Close()
-	return bs
+	return wr.Bytes()
 }
 
 func Resp_file(prot, path string) []byte {
