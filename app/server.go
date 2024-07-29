@@ -4,16 +4,36 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"strings"
 )
 
-func Resp_text_plain(prot, s string) string {
-	return fmt.Sprintf(
+func Resp_text_plain(prot, s string) []byte {
+	return []byte(fmt.Sprintf(
 		"%s 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",
 		prot,
 		len(s),
 		s,
-	)
+	))
+}
+
+func Resp_file(prot, path string) []byte {
+	file, err := os.Open(path)
+	if err != nil {
+		return []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+	}
+	defer file.Close()
+	data := make([]byte, 1024)
+	count, err := file.Read(data)
+	if err != nil {
+		return []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+	}
+	resp_head := []byte(fmt.Sprintf(
+		"%s 200 OK\r\nContent-Type: text/octet-stream\r\nContent-Length: %d\r\n\r\n",
+		prot,
+		count,
+	))
+	return slices.Concat(resp_head, data[:count])
 }
 
 func Handler(conn net.Conn) {
@@ -42,9 +62,11 @@ func Handler(conn net.Conn) {
 		conn.Write([]byte(prot + " 200 OK\r\n\r\n"))
 	} else if len_seg == 3 && path_seg[1] == "echo" {
 		str := path_seg[2]
-		conn.Write([]byte(Resp_text_plain(prot, str)))
+		conn.Write(Resp_text_plain(prot, str))
 	} else if len_seg == 2 && path_seg[1] == "user-agent" {
-		conn.Write([]byte(Resp_text_plain(prot, ua)))
+		conn.Write(Resp_text_plain(prot, ua))
+	} else if len_seg == 3 && path_seg[1] == "file" {
+		conn.Write(Resp_file(prot, path_seg[2]))
 	} else {
 		conn.Write([]byte(prot + " 404 Not Found\r\n\r\n"))
 	}
